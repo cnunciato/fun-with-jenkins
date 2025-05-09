@@ -4,17 +4,21 @@
 
 This is just me getting familiar with Jenkins.
 
-## Infrastructure
+## Running Jenkins locally with Docker Compose
 
-The `infra` folder contains a Pulumi program that deploys Jenkins as a Fargate service. It's just the one container for now, so nothing fancy. The initial `admin` password is set with Pulumi as a secret. To get that, run:
+To spin up a quick Jenkins cluster locally with Docker Compose, first make sure Docker Desktop is running, then run:
 
 ```bash
-pulumi -C infra config get jenkinsAdminPassword
+docker-compose up
 ```
 
-## Converting a Jenkinsfile to a Buildkite pipeline :kite:
+... and browse to the server at http://localhost:8080.
 
-The `.buildkite` folder contains a Node.js script that reads the `Jenkinsfile` in the root of this repo, passes it to the Jenkins server (specifically to the `pipeline-model-converter` endpoint), and transforms the JSON returned by Jenkins into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
+Add whatever plugins you like to `plugins.txt` and they'll be installed automatically.
+
+## Converting a Jenkinsfile to a Buildkite pipeline 🪁
+
+The `.buildkite` folder contains a Node.js script that reads the `Jenkinsfile` in the root of this repo, passes it to a Jenkins server (specifically to the [`pipeline-model-converter`](https://chatgpt.com/share/681d35bd-7d10-8012-bb62-56e7b66c1acb) endpoint), and transforms the JSON returned by that endpoint into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
 
 ```groovy
 pipeline {
@@ -29,9 +33,9 @@ pipeline {
 }
 ```
 
-You'd get:
+The generated pipeline would be
 
-```
+``` V
 $ npm -C .buildkite --silent run build 
 {
     "steps": [
@@ -49,14 +53,12 @@ Commits to the `main` branch run this program and extend the Buildkite pipeline 
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
 
-## Running the Jenkins server locally
+This is just a proof of concept (and only works with declarative pipelines), but it's a neat demonstration of what you can do with dynamic pipelines.
 
-To spin up a quick Jenkins install locally with Docker Compose, first make sure Docker Desktop is running, then run:
+## Infrastructure 🚧
+
+The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins as a Fargate service. It's just one container for now, so nothing fancy. The initial `admin` password is set with Pulumi as a secret. To get that, run:
 
 ```bash
-docker-compose up
+pulumi -C infra config get jenkinsAdminPassword
 ```
-
-... and browse to the server at http://localhost:8080.
-
-More to come.
