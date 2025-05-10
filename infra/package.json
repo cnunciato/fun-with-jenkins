@@ -1,12 +1,11 @@
 {
-    "name": "jenkins-infra",
+    "name": "fun-with-jenkins-infra",
     "devDependencies": {
         "@types/node": "^18",
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/aws": "^6.0.0",
-        "@pulumi/awsx": "^2.0.2",
+        "@pulumi/aws": "^6.0.2",
         "@pulumi/pulumi": "^3.113.0"
     }
 }

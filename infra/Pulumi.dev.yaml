@@ -1,7 +1,4 @@
 config:
   aws:region: us-west-2
-  jenkins-infra:containerPort: "80"
-  jenkins-infra:cpu: "1024"
-  jenkins-infra:memory: "4096"
-  jenkins-infra:jenkinsAdminPassword:
-    secure: AAABAMPIyFg7efOLe4b821130iCL4YnJzF5tBiDGSDMWsqSj+ormpnQ=
+  fun-with-jenkins-infra:instanceType: t3.micro
+  fun-with-jenkins-infra:vpcNetworkCidr: 10.0.0.0/16

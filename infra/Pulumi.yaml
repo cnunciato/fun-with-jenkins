@@ -1,5 +1,5 @@
-name: jenkins-infra
-description: A TypeScript program to deploy a containerized service on AWS
+name: fun-with-jenkins-infra
+description: A TypeScript program to deploy a virtual machine on Amazon EC2
 runtime:
   name: nodejs
   options:
@@ -7,4 +7,4 @@ runtime:
 config:
   pulumi:tags:
     value:
-      pulumi:template: container-aws-typescript
+      pulumi:template: vm-aws-typescript
