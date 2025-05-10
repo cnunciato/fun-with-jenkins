@@ -2,64 +2,48 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as fs from "fs";
 
-// Get some configuration values or set default values.
 const config = new pulumi.Config();
 const instanceType = config.get("instanceType") || "t3.micro";
+const serverPort = config.getNumber("serverPort") || 8080;
 const vpcNetworkCidr = config.get("vpcNetworkCidr") || "10.0.0.0/16";
 
-// Look up the latest Amazon Linux 2 AMI.
+// Get the latest Amazon Linux 2 AMI.
 const ami = aws.ec2.getAmi({
-    filters: [{
-        name: "name",
-        values: ["amzn2-ami-hvm-*"],
-    }],
+    filters: [{ name: "name", values: ["amzn2-ami-hvm-*"] }],
     owners: ["amazon"],
     mostRecent: true,
 }).then(invoke => invoke.id);
 
-// User data to start a HTTP server in the EC2 instance
-const userData = fs.readFileSync("userdata.sh", "utf-8");
-
-// Create VPC.
 const vpc = new aws.ec2.Vpc("vpc", {
     cidrBlock: vpcNetworkCidr,
     enableDnsHostnames: true,
     enableDnsSupport: true,
 });
 
-// Create an internet gateway.
-const gateway = new aws.ec2.InternetGateway("gateway", {vpcId: vpc.id});
+const gateway = new aws.ec2.InternetGateway("gateway", { vpcId: vpc.id });
 
-// Create a subnet that automatically assigns new instances a public IP address.
 const subnet = new aws.ec2.Subnet("subnet", {
     vpcId: vpc.id,
     cidrBlock: "10.0.1.0/24",
     mapPublicIpOnLaunch: true,
 });
 
-// Create a route table.
-const routeTable = new aws.ec2.RouteTable("routeTable", {
+const routeTable = new aws.ec2.RouteTable("route-table", {
     vpcId: vpc.id,
-    routes: [{
-        cidrBlock: "0.0.0.0/0",
-        gatewayId: gateway.id,
-    }],
+    routes: [{ cidrBlock: "0.0.0.0/0", gatewayId: gateway.id }],
 });
 
-// Associate the route table with the public subnet.
-const routeTableAssociation = new aws.ec2.RouteTableAssociation("routeTableAssociation", {
+const routeTableAssociation = new aws.ec2.RouteTableAssociation("route-table-association", {
     subnetId: subnet.id,
     routeTableId: routeTable.id,
 });
 
-// Create a security group allowing inbound access over port 80 and outbound
-// access to anywhere.
-const secGroup = new aws.ec2.SecurityGroup("secGroup", {
+const securityGroup = new aws.ec2.SecurityGroup("security-group", {
     description: "Enable HTTP access",
     vpcId: vpc.id,
     ingress: [{
-        fromPort: 8080,
-        toPort: 8080,
+        fromPort: serverPort,
+        toPort: serverPort,
         protocol: "tcp",
         cidrBlocks: ["0.0.0.0/0"],
     }],
@@ -71,19 +55,38 @@ const secGroup = new aws.ec2.SecurityGroup("secGroup", {
     }],
 });
 
-// Create and launch an EC2 instance into the public subnet.
-const server = new aws.ec2.Instance("server", {
-    instanceType: instanceType,
-    subnetId: subnet.id,
-    vpcSecurityGroupIds: [secGroup.id],
-    userData: userData,
-    ami: ami,
-    tags: {
-        Name: "webserver",
-    },
+// Create an IAM Role for the CloudWatch Agent.
+const cloudwatchRole = new aws.iam.Role("cloudwatch-role", {
+    assumeRolePolicy: aws.iam.assumeRolePolicyForPrincipal({ Service: "ec2.amazonaws.com" }),
 });
 
-// Export the instance's publicly accessible IP address and hostname.
-export const ip = server.publicIp;
-export const hostname = server.publicDns;
-export const url = pulumi.interpolate`http://${server.publicDns}`;
+const cloudwatchRolePolicyAttachment = new aws.iam.RolePolicyAttachment("cloudwatch-role-policy-attachment", {
+    role: cloudwatchRole.name,
+    policyArn: "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+});
+
+const instanceProfile = new aws.iam.InstanceProfile("instance-profile", {
+    role: cloudwatchRole.name,
+});
+
+const systemLogGroup = new aws.cloudwatch.LogGroup("system-log-group");
+const jenkinsLogGroup = new aws.cloudwatch.LogGroup("jenkins-log-group");
+const userData = fs.readFileSync("userdata.sh", "utf-8");
+
+// Create an instance for the Jenkins server.
+const instance = new aws.ec2.Instance("instance", {
+    ami: ami,
+    instanceType: instanceType,
+    iamInstanceProfile: instanceProfile.name,
+    vpcSecurityGroupIds: [securityGroup.id],
+    subnetId: subnet.id,
+    userData: pulumi.all([systemLogGroup.name, jenkinsLogGroup.name]).apply(([systemLogName, jenkinsLogName]) => {
+        return userData
+            .replace("{{ec2-system-messages-log}}", systemLogName)
+            .replace("{{jenkins-service-log}}", jenkinsLogName);
+    }),
+});
+
+export const ip = instance.publicIp;
+export const hostname = instance.publicDns;
+export const url = pulumi.interpolate`http://${instance.publicDns}:${serverPort}`;
