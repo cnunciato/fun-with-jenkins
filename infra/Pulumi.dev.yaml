@@ -1,5 +1,6 @@
 config:
   aws:region: us-west-2
   fun-with-jenkins-infra:instanceType: t3.micro
+  fun-with-jenkins-infra:numAgents: 5
   fun-with-jenkins-infra:serverPort: 8080
   fun-with-jenkins-infra:vpcNetworkCidr: 10.0.0.0/16

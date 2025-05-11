@@ -6,7 +6,7 @@ set -e
 yum update -y
 wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-yum upgrade -y
+# yum upgrade -y
 yum install java-17-amazon-corretto jenkins -y
 
 # Enable Jenkins.
@@ -49,3 +49,16 @@ nohup journalctl -u jenkins -f > /var/log/jenkins/jenkins.log &
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config -m ec2 \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
+# Create .ssh directory
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+
+# Install private key
+cat <<'EOF' > /root/.ssh/id_rsa
+{{jenkins-private-key}}
+EOF
+
+chmod 600 /root/.ssh/id_rsa
+
+cat /root/.ssh/id_rsa
