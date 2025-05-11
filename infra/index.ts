@@ -1,4 +1,3 @@
-// index.ts
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 import * as fs from "fs";
@@ -126,6 +125,50 @@ const controller = new aws.ec2.Instance("jenkins-controller", {
     },
 });
 
+const originAccessIdentity = new aws.cloudfront.OriginAccessIdentity("jenkins-oai", {
+    comment: "OAI for Jenkins controller",
+});
+
+const cloudfrontDistribution = new aws.cloudfront.Distribution("jenkins-cdn", {
+    enabled: true,
+    origins: [{
+        domainName: controller.publicDns, // No port here!
+        originId: "jenkinsOrigin",
+        customOriginConfig: {
+            httpPort: serverPort,
+            httpsPort: 443,
+            originProtocolPolicy: "http-only",
+            originSslProtocols: ["TLSv1.2"],
+        },
+    }],
+    defaultCacheBehavior: {
+        targetOriginId: "jenkinsOrigin",
+        viewerProtocolPolicy: "redirect-to-https",
+        allowedMethods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+        cachedMethods: ["GET", "HEAD"],
+        forwardedValues: {
+            queryString: true,
+            headers: ["*"],
+            cookies: { forward: "all" },
+        },
+        minTtl: 0,
+        defaultTtl: 0,
+        maxTtl: 0,
+    },
+    priceClass: "PriceClass_100",
+    restrictions: {
+        geoRestriction: {
+            restrictionType: "none",
+        },
+    },
+    viewerCertificate: {
+        cloudfrontDefaultCertificate: true,
+    },
+    isIpv6Enabled: true,
+    defaultRootObject: "",
+});
+
 export const controllerIp = controller.publicIp;
 export const controllerUrl = pulumi.interpolate`http://${controller.publicDns}:${serverPort}`;
+export const controllerCdnUrl = cloudfrontDistribution.domainName.apply(name => `https://${name}`);
 export const exportedAgentIps = agentIps;
