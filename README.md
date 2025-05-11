@@ -57,7 +57,7 @@ This is just a proof of concept (and only works with declarative pipelines), but
 
 ## Infrastructure 🚧
 
-The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins on EC2 with a configurable number of agents (all as configurable virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are streamed to CloudWatch, so can be pulled with `pulumi logs`:
+The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins on EC2 with a configurable number of agents (all as configurable virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are streamed to CloudWatcgh, so can be pulled with `pulumi logs`:
 
 ```bash
 pulumi logs -f
