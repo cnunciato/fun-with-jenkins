@@ -57,29 +57,8 @@ This is just a proof of concept (and only works with declarative pipelines), but
 
 ## Infrastructure 🚧
 
-The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins on EC2 with a configurable number of agents, all as virtual machines. Logs for the controller are streamed to CloudWatch, so can be pulled with `pulumi logs`:
+The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins on EC2 with a configurable number of agents (all as configurable virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are streamed to CloudWatch, so can be pulled with `pulumi logs`:
 
 ```bash
 pulumi logs -f
 ```
-
-Once the controller is up, for each agent:
-
-* Set up an agent
-* agent-1
-* Permanent agent, create
-* Remote root directory /home/ec2-user/jenkins-agent
-* As much as possible
-* Launch via ssh
-* Host as one of the IPs
-* Credentials -> add -> Jenkins
-* Kind SSH username with private key
-* Username ec2-user
-* Private key -> enter directly -> add
-* Paste jenkins-key -> add
-* Then choose Credentials -> ec2-user
-* Non verifying strategy
-* Keep agent online
-* Save
-
-TODO: ☝️ JCasC that!

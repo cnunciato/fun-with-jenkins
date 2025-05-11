@@ -8,13 +8,12 @@ const instanceType = config.get("instanceType") || "t3.micro";
 const serverPort = config.getNumber("serverPort") || 8080;
 const vpcNetworkCidr = config.get("vpcNetworkCidr") || "10.0.0.0/16";
 const numAgents = config.getNumber("numAgents") || 5;
+const adminPassword = config.requireSecret("adminPassword");
 
 const privateKey = fs.readFileSync("jenkins-key", "utf-8").trim();
 const publicKey = fs.readFileSync("jenkins-key.pub", "utf-8").trim();
-const controllerUserData = fs.readFileSync("userdata-controller.sh", "utf-8");
-const agentUserData = fs.readFileSync("userdata-agent.sh", "utf-8");
-
-console.log(agentUserData.replace("{{jenkins-public-key}}", publicKey));
+const controllerScript = fs.readFileSync("userdata-controller.sh", "utf-8");
+const agentScript = fs.readFileSync("userdata-agent.sh", "utf-8");
 
 const ami = aws.ec2.getAmi({
     filters: [{ name: "name", values: ["amzn2-ami-hvm-*"] }],
@@ -74,42 +73,59 @@ const instanceProfile = new aws.iam.InstanceProfile("instance-profile", {
 const systemLogGroup = new aws.cloudwatch.LogGroup("system-log-group");
 const jenkinsLogGroup = new aws.cloudwatch.LogGroup("jenkins-log-group");
 
-const controllerInstance = new aws.ec2.Instance("jenkins-controller", {
-    ami: ami,
-    instanceType: instanceType,
-    iamInstanceProfile: instanceProfile.name,
-    vpcSecurityGroupIds: [securityGroup.id],
-    subnetId: subnet.id,
-    userData: pulumi
-        .all([systemLogGroup.name, jenkinsLogGroup.name])
-        .apply(([systemLogName, jenkinsLogName]) => {
-            return controllerUserData
-                .replace("{{ec2-system-messages-log}}", systemLogName)
-                .replace("{{jenkins-service-log}}", jenkinsLogName)
-                .replace("{{jenkins-private-key}}", privateKey);
-        }),
-    tags: {
-        Name: "jenkins-controller",
-    },
-});
-
 const agents: aws.ec2.Instance[] = [];
+const agentIps: pulumi.Output<string>[] = [];
 
 for (let i = 0; i < numAgents; i++) {
+    const agentUserData = agentScript.replace("{{jenkins-public-key}}", publicKey);
+
     const agent = new aws.ec2.Instance(`jenkins-agent-${i}`, {
         ami: ami,
         instanceType: instanceType,
         iamInstanceProfile: instanceProfile.name,
         vpcSecurityGroupIds: [securityGroup.id],
         subnetId: subnet.id,
-        userData: agentUserData.replace("{{jenkins-public-key}}", publicKey),
+        userData: agentUserData,
         tags: {
             Name: `jenkins-agent-${i + 1}`,
         },
-    });
-    agents.push(agent);
+  });
+
+  agents.push(agent);
+  agentIps.push(agent.privateIp);
 }
 
-export const controllerIp = controllerInstance.publicIp;
-export const controllerUrl = pulumi.interpolate`http://${controllerInstance.publicDns}:${serverPort}`;
-export const agentIps = agents.map(a => a.publicIp);
+const bootstrapGroovy = pulumi.all([agentIps, adminPassword]).apply(([ips, password]) => {
+    const agentList = ips.map(ip => `"${ip}"`).join(", ");
+    const template = fs.readFileSync("bootstrap.groovy", "utf-8");
+    return template
+        .replace("{{jenkins-private-key}}", privateKey)
+        .replace("{{agent-private-ips}}", agentList)
+        .replace("{{admin-password}}", password);
+});
+
+const controllerUserData = pulumi.all([systemLogGroup.name, jenkinsLogGroup.name, bootstrapGroovy]).apply(
+    ([systemLogName, jenkinsLogName, groovy]) => {
+        return controllerScript
+        .replace("{{ec2-system-messages-log}}", systemLogName)
+        .replace("{{jenkins-service-log}}", jenkinsLogName)
+        .replace("{{jenkins-private-key}}", privateKey)
+        .replace("{{bootstrap-groovy}}", groovy);
+    }
+);
+
+const controller = new aws.ec2.Instance("jenkins-controller", {
+    ami: ami,
+    instanceType: instanceType,
+    iamInstanceProfile: instanceProfile.name,
+    vpcSecurityGroupIds: [securityGroup.id],
+    subnetId: subnet.id,
+    userData: controllerUserData,
+    tags: {
+        Name: "jenkins-controller",
+    },
+});
+
+export const controllerIp = controller.publicIp;
+export const controllerUrl = pulumi.interpolate`http://${controller.publicDns}:${serverPort}`;
+export const exportedAgentIps = agentIps;

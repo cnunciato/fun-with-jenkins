@@ -2,18 +2,35 @@
 
 set -e
 
-# Install Jenkins
+# Install Jenkins and Java
 yum update -y
 wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
-# yum upgrade -y
-yum install java-17-amazon-corretto jenkins -y
+yum install -y java-17-amazon-corretto jenkins
 
-# Enable Jenkins.
-systemctl enable jenkins
+# Start Jenkins temporarily (it will create needed directories)
 systemctl start jenkins
 
-# Install and configure the CloudWatch Agent.
+# Wait a moment for Jenkins to initialize
+sleep 10
+
+# Create plugins directory if it doesn't exist and set permissions
+mkdir -p /var/lib/jenkins/plugins
+chown jenkins:jenkins /var/lib/jenkins/plugins
+chmod 755 /var/lib/jenkins/plugins
+
+# Download the plugin manager
+echo "Downloading Jenkins plugin manager..."
+wget "https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.12.13/jenkins-plugin-manager-2.12.13.jar" -O /tmp/jenkins-plugin-manager.jar
+
+# Install Jenkins plugins
+echo "Installing Jenkins plugins..."
+java -jar /tmp/jenkins-plugin-manager.jar --war /usr/share/java/jenkins.war -d /var/lib/jenkins/plugins --plugins credentials:latest ssh-credentials:latest plain-credentials:latest ssh-slaves:latest
+
+# Give Jenkins ownership of the plugins
+chown -R jenkins:jenkins /var/lib/jenkins/plugins
+
+# Install CloudWatch agent
 yum install -y amazon-cloudwatch-agent
 
 cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
@@ -41,24 +58,31 @@ cat <<EOF > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 }
 EOF
 
-# Start logging Jenkins service output.
 mkdir -p /var/log/jenkins
 nohup journalctl -u jenkins -f > /var/log/jenkins/jenkins.log &
 
-# Start the CloudWatch Agent.
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
   -a fetch-config -m ec2 \
   -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
-# Create .ssh directory
+# Install SSH key for controller
 mkdir -p /root/.ssh
 chmod 700 /root/.ssh
 
-# Install private key
 cat <<'EOF' > /root/.ssh/id_rsa
 {{jenkins-private-key}}
 EOF
 
 chmod 600 /root/.ssh/id_rsa
 
-cat /root/.ssh/id_rsa
+# Add Groovy init script for agent setup
+mkdir -p /var/lib/jenkins/init.groovy.d
+
+cat <<'EOF' > /var/lib/jenkins/init.groovy.d/bootstrap.groovy
+{{bootstrap-groovy}}
+EOF
+
+chown -R jenkins:jenkins /var/lib/jenkins/init.groovy.d
+
+# Restart Jenkins to apply plugin changes
+systemctl restart jenkins
