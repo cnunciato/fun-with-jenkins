@@ -33,7 +33,7 @@ pipeline {
 }
 ```
 
-The generated pipeline would be
+The generated pipeline would be:
 
 ``` V
 $ npm -C .buildkite --silent run build 
@@ -53,7 +53,7 @@ Commits to the `main` branch run this program and extend the Buildkite pipeline 
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
 
-This is just a proof of concept (and only works with declarative pipelines), but it's a neat demonstration of what you can do with dynamic pipelines.
+This is just a proof of concept (and only works with declarative pipelines), but it's a neat demonstration of what you can do with dynamic pipelines. (Requires that an API token be created first, then set as a Buildkite cluter secret.)
 
 ## Infrastructure 🚧
 
