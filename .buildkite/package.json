@@ -3,13 +3,12 @@
   "version": "0.1.0",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "build": "node ./pipeline.js"
-  },
   "license": "MIT",
-  "description": "",
-  "dependencies": {
-    "@buildkite/buildkite-sdk": "^0.2.3"
+  "scripts": {
+      "pipeline": "node ./pipeline.js",
+      "jenkins-pipeline": "node ./jenkins-pipeline.js"
   },
-  "devDependencies": {}
+  "dependencies": {
+      "@buildkite/buildkite-sdk": "^0.2.3"
+  }
 }

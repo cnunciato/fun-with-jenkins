@@ -9,77 +9,60 @@ import com.cloudbees.plugins.credentials.domains.*
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey.DirectEntryPrivateKeySource
 
-println "--> Bootstrap Groovy Script: Initializing Jenkins configuration"
+println "--> Bootstrap Groovy Script: Initializing Jenkins configuration."
 
-// Set admin password (optional: remove if not needed)
+// Create the Jenkins admin account.
 def instance = Jenkins.getInstance()
 def securityRealm = instance.getSecurityRealm()
-def admin = securityRealm.createAccount("admin", "{{admin-password}}")
+def admin = securityRealm.createAccount("{{admin-username}}", "{{admin-password}}")
 admin.save()
-println "--> Admin account created"
 
-// Create SSH credentials
+// Don't use the root/controller node as an executor.
+instance.setNumExecutors(0)
+
+// Create the SSH credentials for agent communication.
 def privateKey = '''{{jenkins-private-key}}'''.stripIndent()
 def credentialsId = "ec2-user-key"
 def existing = SystemCredentialsProvider.getInstance().getCredentials().find {
-  it instanceof BasicSSHUserPrivateKey && it.id == credentialsId
+    it instanceof BasicSSHUserPrivateKey && it.id == credentialsId
 }
 
 if (!existing) {
-  def privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKey)
-  def sshCredentials = new BasicSSHUserPrivateKey(
-    CredentialsScope.GLOBAL,
-    credentialsId,
-    "ec2-user",
-    privateKeySource,
-    null,
-    "Jenkins EC2 User Key"
-  )
-  SystemCredentialsProvider.getInstance().getCredentials().add(sshCredentials)
-  SystemCredentialsProvider.getInstance().save()
-  println "--> SSH credentials added"
+    def privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKey)
+    def sshCredentials = new BasicSSHUserPrivateKey( CredentialsScope.GLOBAL, credentialsId, "ec2-user", privateKeySource, null, "Jenkins EC2 User Key")
+    
+    SystemCredentialsProvider.getInstance().getCredentials().add(sshCredentials)
+    SystemCredentialsProvider.getInstance().save()
+
+    println "--> SSH credentials added."
 } else {
-  println "--> SSH credentials already exist"
+    println "--> SSH credentials already exist."
 }
 
 // Add agents
 def agentIps = [{{agent-private-ips}}]
 
 agentIps.eachWithIndex { ip, index ->
-  def nodeName = "agent-${index + 1}"
-  if (instance.getNode(nodeName) != null) {
-    println "--> Node ${nodeName} already exists"
-    return
-  }
+    def nodeName = "agent-${index + 1}"
 
-  def sshHostKeyVerificationStrategy = new NonVerifyingKeyVerificationStrategy()
+    if (instance.getNode(nodeName) != null) {
+        println "--> Node ${nodeName} already exists."
+        return
+    }
 
-  def launcher = new SSHLauncher(
-    ip,
-    22,
-    credentialsId,
-    null, // jvmOptions
-    null, // javaPath
-    null, // prefixStartSlaveCmd
-    null, // suffixStartSlaveCmd
-    60,   // launchTimeoutSeconds
-    3,    // maxNumRetries
-    15,   // retryWaitTime
-    sshHostKeyVerificationStrategy
-  )
+    // Disable host verification.
+    def sshHostKeyVerificationStrategy = new NonVerifyingKeyVerificationStrategy()
 
-  def node = new DumbSlave(
-    nodeName,
-    "/home/ec2-user/jenkins-agent",
-    launcher
-  )
-  node.numExecutors = 1
-  node.labelString = "linux"
-  node.mode = hudson.model.Node.Mode.NORMAL
+    def launcher = new SSHLauncher( ip, 22, credentialsId, null, null, null, null, 60, 3, 15, sshHostKeyVerificationStrategy)
+    def node = new DumbSlave( nodeName, "/home/ec2-user/jenkins-agent", launcher)
 
-  instance.addNode(node)
-  println "--> Node ${nodeName} added"
+    node.numExecutors = 1
+    node.labelString = "linux"
+    node.mode = hudson.model.Node.Mode.NORMAL
+
+    instance.addNode(node)
+    println "--> Node ${nodeName} added."
 }
 
 instance.save()
-println "--> Jenkins configuration bootstrap complete"
+println "--> Jenkins configuration bootstrap complete."
