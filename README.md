@@ -18,7 +18,7 @@ Add whatever plugins you like to `plugins.txt` and they'll be installed automati
 
 ## Converting a Jenkinsfile to a Buildkite pipeline 🪁
 
-The `.buildkite` folder contains a Node.js script that reads the `Jenkinsfile` in the root of this repo, passes it to a Jenkins server (specifically to the [`pipeline-model-converter`](https://chatgpt.com/share/681d35bd-7d10-8012-bb62-56e7b66c1acb) endpoint), and transforms the JSON returned by that endpoint into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
+The `.buildkite` folder contains a Node.js script that reads the `Jenkinsfile` in the root of this repo, passes it to a Jenkins server (specifically to the [`pipeline-model-converter`](https://chatgpt.com/share/681d35bd-7d10-8012-bb62-56e7b66c1acb) endpoint), and transforms the JSON returned by that endpoint into a Buildkite pipeline definition. Given the following `Jenkinsfile`, for example:
 
 ```groovy
 pipeline {
