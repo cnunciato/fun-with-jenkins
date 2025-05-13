@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage(':jenkins: Hello from the Jenkinsfile!') {
             steps {
-                echo 'Hi, world! :wave:'
+                echo 'Hello, world! :wave:'
             }
         }
     }
