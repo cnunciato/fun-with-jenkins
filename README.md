@@ -49,9 +49,15 @@ $ npm -C .buildkite --silent run build
 }
 ```
 
-Commits to the `main` branch run this program and extend the Buildkite pipeline at runtime accordingly:
+Commits to the `main` branch of this repo trigger:
+
+* A run of the Jenkins pipeline defined in the `Jenkinsfile`
+* A run of the program above, which converts the `Jenkinsfile` into a Buildkite pipeline (at runtime!) and then runs it on Buildkite:
+
+![A Jenkins pipeline run](https://github.com/user-attachments/assets/322e2723-bfdb-48c4-9d42-a49f333751cf)
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
+
 
 This is just a proof of concept (and only works with declarative pipelines), but it's a neat demonstration of what you can do with dynamic pipelines. (Requires that an API token be created first, then set as a Buildkite cluter secret.)
 
