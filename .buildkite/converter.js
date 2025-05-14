@@ -541,7 +541,7 @@ function jenkinsToBuildkite(jenkinsJSON) {
 
 // Export functions using ES modules syntax
 export {
-    jenkinsToBuildkite as convertJenkinsToBuildkite,
+    jenkinsToBuildkite,
     convertPipeline,
     convertStep,
     convertSteps,
