@@ -2,6 +2,8 @@
  * Jenkins to Buildkite Pipeline Converter
  * 
  * Converts a Jenkins declarative pipeline in JSON format to a Buildkite pipeline JSON.
+ * 
+ * Generated using the Buildkite pipeline and Jenkins Declarative Pipeline JSON schemas.
  */
 
 // Helper to extract raw argument value
