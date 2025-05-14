@@ -4,6 +4,8 @@
 
 This is me getting familiar with Jenkins and learning more about how to convert Jenkins pipelines to Buildkite.
 
+im in ur readme
+
 ## Running Jenkins locally with Docker Compose
 
 To spin up a lightweight Jenkins cluster locally with Docker, make sure Docker Desktop is running, then run:
