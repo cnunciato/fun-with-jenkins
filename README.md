@@ -4,8 +4,6 @@
 
 This is me getting familiar with Jenkins and learning more about how to convert Jenkins pipelines to Buildkite.
 
-im in ur readme
-
 ## Running Jenkins locally with Docker Compose
 
 To spin up a lightweight Jenkins cluster locally with Docker, make sure Docker Desktop is running, then run:
@@ -175,7 +173,7 @@ Commits to the `main` branch of this repo do exactly this, converting the steps 
 
 ![The corrsponding run](https://github.com/user-attachments/assets/310aa889-f4fa-408a-b540-28dcc075cb48)
 
-Each commit triggers two builds, one in Jenkins and one in Buildkite. Both are linked from the the commit's associated GitHub checks.
+Each push to `main` triggers two builds, one in Jenkins and one in Buildkite. Both are linked from the the commit's associated GitHub checks.
 
 The environment variables required by the conversion script (the username, password, and Jenkins URL mentioned above) are set in the Buildkite root pipeline in the Steps field:
 
