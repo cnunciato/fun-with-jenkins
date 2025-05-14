@@ -34,7 +34,11 @@ async function convert(jenkinsfile) {
     const json = await response.json();
 
     if (json.data.result === "failure") {
-        json.data.errors.map(err => console.error(err.error.join("\n")));
+        console.error(`Errors encountered converting ${jenkinsFile}:`);
+        const errors = json.data.errors.at(0).error;
+        const messages = Array.isArray(errors) ? errors : [errors];
+
+        console.error(messages.map(m => `* ${m}`).join("\n"));
         process.exit(1);
     }
 
@@ -42,5 +46,13 @@ async function convert(jenkinsfile) {
 }
   
 convert(jenkinsFile)
-    .then(result => console.log(JSON.stringify(result, null, 4)))
+    .then(result => {
+
+        // By default, the converter assigns an `agents` prop of `queue: 'default'`, 
+        // which for my pipeline doesn't work. (I don't have a queue named 'default'). 
+        // So I'll just quietly remove that.
+        delete result.agents;
+        
+        console.log(JSON.stringify(result, null, 4))
+    })
     .catch(err => console.error("Conversion failed:", err.message));

@@ -1,9 +1,7 @@
 pipeline {
-    agent {
-        label "hosted-linux"
-    }
+    agent any
     stages {
-        stage(':jenkins: Hello from the Jenkinsfile!') {
+        stage(':jenkins: Hi there from the Jenkinsfile!') {
             steps {
                 echo 'Hello, world! :wave:'
             }
