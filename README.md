@@ -31,13 +31,13 @@ jenkins-1  | *************************************************************
 
 Paste the password into the UI, choose Install Suggested Plugins, and you're good to go. 🎉
 
-You can also use the `plugins.txt` file to specify any additional plugins you'd Jenkins to install automatically at startup using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/).
+You can also use the `plugins.txt` file to specify any additional plugins like Jenkins to install automatically on startup using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/).
 
 ## Converting a Jenkinsfile into a Buildkite pipeline 🪁
 
 This repo also demonstrates how to convert a Jenkins pipeline into a Buildkite pipeline programmatically.
 
-The Node.js script in the `.buildkite` folder, `jenkins-pipeline.js`, is capable of converting a `Jenkinsfile` into Buildkite pipeline JSON. By default, it looks for a `Jenkinsfile` in the root of the repository. Given the following `Jenkinsfile`, for example:
+The Node.js script in the `.buildkite` folder (`jenkins-pipeline.js`) converts `Jenkinsfile`s into Buildkite pipeline definitions. By default, it looks for a `Jenkinsfile` in the root of the repository. Given the following `Jenkinsfile`, for example:
 
 ```groovy
 pipeline {
@@ -67,7 +67,7 @@ The script would produce the following Buildkite pipeline JSON:
 }
 ```
 
-Assuming you have Jenkins running locally (e.g., under `docker-compose` as above), you can run script manually by setting a few required environment variables, replacing `JENKINS_PASSWORD` with the one in your `docker-compose` logs:
+Assuming you have Jenkins running locally (e.g., under `docker-compose` as described), you can run the script manually by setting a few environment variables, replacing `JENKINS_PASSWORD` with the one in your `docker-compose` logs:
 
 ```bash
 export JENKINS_USERNAME="admin"
@@ -75,16 +75,16 @@ export JENKINS_PASSWORD="6a62ece5bcf04bb89e937cae3ee1c830"
 export JENKINS_URL="http://localhost:8080/"
 ```
 
-And then:
+And then running:
 
 ```bash
 npm -C .buildkite install
 npm -C .buildkite --silent run jenkins-pipeline
 ```
 
-### How does it work?
+### How does this work?
 
-The script uses Jenkins itself (specifically the [Declarative Pipeline plugin](https://plugins.jenkins.io/pipeline-model-definition/)) to convert a declarative `Jenkinsfile` into a JSON structure that Jenkins uses to model pipelines internally, then transforms that structure into a Buildkite pipeline definition. It does this by calling Jenkins's internal `pipeline-model-converter` endpoint:
+The script uses Jenkins itself (specifically the [Declarative Pipeline plugin](https://plugins.jenkins.io/pipeline-model-definition/)) to convert a declarative `Jenkinsfile` into a JSON structure that Jenkins uses to model pipelines internally. It does this by calling Jenkins's internal `pipeline-model-converter` endpoint:
 
 ```
 POST /pipeline-model-converter/toJson
@@ -143,7 +143,7 @@ Which produces:
 }
 ```
 
-The `converter` module code-generated using on the [Buildkite pipeline](https://github.com/buildkite/pipeline-schema/blob/main/schema.json) and [Jenkins declarative pipeline](https://github.com/jenkinsci/pipeline-model-definition-plugin/blob/master/EXTENDING.md) JSON schemas, the latter retrievable directly from Jenkins with the `pipeline-model-schema` endpoint:
+The script then transforms this structure into a Buildkite pipeline with `converter.js`, a module produced using the [Buildkite pipeline](https://github.com/buildkite/pipeline-schema/blob/main/schema.json) and [Jenkins declarative pipeline](https://github.com/jenkinsci/pipeline-model-definition-plugin/blob/master/EXTENDING.md) JSON schemas. The declarative pipeline schema is available in Jenkins at the `pipeline-model-schema` endpoint:
 
 ```bash
 curl -s -X GET \
@@ -152,7 +152,7 @@ curl -s -X GET \
   "${JENKINS_URL}/pipeline-model-schema/json"
 ```
 
-Both JSON schemas are included for reference in the `.buildkite` folder. More Jenkins pipeline examples are available in the official [Jenkins pipeline examples](https://github.com/jenkinsci/pipeline-examples/tree/master) repository.
+Both JSON schemas are included for reference in the `.buildkite` folder, and more Jenkins pipeline examples are available (e.g., for testing) in the official [Jenkins pipeline examples](https://github.com/jenkinsci/pipeline-examples/tree/master) repository.
 
 ### Doing it live 🚀
 
