@@ -173,7 +173,7 @@ Commits to the `main` branch of this repo do exactly this, converting the steps 
 
 ![The corrsponding run](https://github.com/user-attachments/assets/310aa889-f4fa-408a-b540-28dcc075cb48)
 
-Each commit triggers two builds, one in Jenkins and one in Buildite. Both are linked from the the commit's associated GitHub checks.
+Each commit triggers two builds, one in Jenkins and one in Buildkite. Both are linked from the the commit's associated GitHub checks.
 
 The environment variables required by the conversion script (the username, password, and Jenkins URL mentioned above) are set in the Buildkite root pipeline in the Steps field:
 
@@ -193,6 +193,8 @@ steps:
       - npm -C .buildkite --silent run jenkins-pipeline | buildkite-agent pipeline upload
 ```
 
+I'm currently using Pulumi to deploy this cluster to AWS. See below for details.
+
 ### Why is this interesting?
 
 As a proof-of-concept, this script probably doesn't handle _everything_ that can be done with a declarative `Jenkinsfile` -- for example, it doesn't yet handle conditional logic. But the approach is nevertheless a powerful one in that it lets you:
@@ -201,7 +203,7 @@ As a proof-of-concept, this script probably doesn't handle _everything_ that can
 * Convert large numbers of Jenkins pipelines more easily by relying on Jenkins's own internal data structures (as opposed to human-authored Jenkinsfiles) and encapsulating the logic of conversion for reuse across an organization 
 * Migrate to Buildkite safely and gradually by running both Jenkins and Buildkite side-by-side against the same codebases
 
-## Deploying Jenkins to EC2
+## Deploying a Jenkins cluster to EC2
 
 The `infra` folder contains a Pulumi program that deploys a Jenkins cluster to EC2 with a configurable number of agents (all as virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are sent to CloudWatch, so can be streamed to the terminal pulled with `pulumi logs`:
 
