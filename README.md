@@ -2,7 +2,7 @@
 
 [![Build status](https://badge.buildkite.com/41540f18af5fa6a63abe00a854bfe22f7a1a0131210f7c08a4.svg)](https://buildkite.com/cnunciato/fun-with-jenkins)
 
-This is just me getting familiar with Jenkins.
+This is me getting familiar with Jenkins and learning more about how to convert Jenkins pipelines to Buildkite.
 
 ## Running Jenkins locally with Docker Compose
 
