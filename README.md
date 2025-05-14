@@ -88,7 +88,7 @@ npm -C .buildkite --silent run jenkins-pipeline
 To point the script at a different `Jenkinsfile`:
 
 ```bash
-npm -C .buildkite --silent run ../SiblingJenkinsfile
+npm -C .buildkite --silent run jenkins-pipeline ../MySiblingJenkinsfile
 ```
 
 ### How does this work?
