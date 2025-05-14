@@ -3,7 +3,8 @@ import * as aws from "@pulumi/aws";
 import * as fs from "fs";
 
 const config = new pulumi.Config();
-const instanceType = config.get("instanceType") || "t3.micro";
+const controllerInstanceType = config.get("controllerInstanceType") || "t3.micro";
+const agentInstanceType = config.get("agentInstanceType") || "t3.micro";
 const controllerPort = config.getNumber("controllerPort") || 8080;
 const numberOfAgents = config.getNumber("numberOfAgents") || 1;
 const adminUsername = config.require("adminUsername");
@@ -98,7 +99,7 @@ for (let i = 0; i < numberOfAgents; i++) {
 
     const agent = new aws.ec2.Instance(`jenkins-agent-${i}`, {
         ami: ami,
-        instanceType: instanceType,
+        instanceType: agentInstanceType,
         iamInstanceProfile: instanceProfile.name,
         vpcSecurityGroupIds: [securityGroup.id],
         subnetId: subnet.id,
@@ -134,7 +135,7 @@ const controllerUserData = pulumi.all([systemLogGroup.name, jenkinsLogGroup.name
 
 const controller = new aws.ec2.Instance("jenkins-controller", {
     ami: ami,
-    instanceType: instanceType,
+    instanceType: controllerInstanceType,
     iamInstanceProfile: instanceProfile.name,
     vpcSecurityGroupIds: [securityGroup.id],
     subnetId: subnet.id,

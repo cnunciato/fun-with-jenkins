@@ -8,6 +8,9 @@ rpm --import https://yum.corretto.aws/corretto.key
 curl -Lo /etc/yum.repos.d/corretto.repo https://yum.corretto.aws/corretto.repo
 yum install -y java-17-amazon-corretto
 
+# Install useful tools.
+yum install -y git curl unzip zip ca-certificates gcc gcc-c++ make java-17-openjdk-devel python3 python3-pip ruby jq rsync net-tools
+
 # Create the Jenkins agent directory.
 mkdir -p /home/ec2-user/jenkins-agent
 chown -R ec2-user:ec2-user /home/ec2-user/jenkins-agent

@@ -1,17 +1,17 @@
 import { readFileSync } from "fs";
 
 const username = process.env.JENKINS_USERNAME;
-const token = process.env.JENKINS_TOKEN;
+const password = process.env.JENKINS_PASSWORD;
 const jenkinsUrl = process.env.JENKINS_URL;
 
-if (!username || !token || !jenkinsUrl) {
+if (!username || !password || !jenkinsUrl) {
     console.error("Missing username, token, or Jenkins URL.")
     process.exit(1);
 }
 
 async function convert(jenkinsfile) {
     const file = readFileSync(jenkinsfile, "utf8");
-    const auth = Buffer.from(`${username}:${token}`).toString("base64");
+    const auth = Buffer.from(`${username}:${password}`).toString("base64");
 
     const form = new FormData();
     form.append("jenkinsfile", file);

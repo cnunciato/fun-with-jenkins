@@ -14,11 +14,13 @@ docker-compose up
 
 ... and browse to the server at http://localhost:8080.
 
-Add whatever plugins you like to `plugins.txt` and they'll be installed automatically.
+At first launch, you'll be prompted for the initial administrator password. You'll find this password in the `docker-compose` logs, which should be visible in your terminal. Paste the password into the UI when prompted, choose Install Recommended Plugins, and you're done. 
+
+Optionally, you can use the `plugins.txt` file to specify any additional plugins you'd like to install automatically, and .
 
 ## Converting a Jenkinsfile to a Buildkite pipeline 🪁
 
-The `.buildkite` folder contains a Node.js script that reads the `Jenkinsfile` in the root of this repo, passes it to a Jenkins server (specifically to the [`pipeline-model-converter`](https://chatgpt.com/share/681d35bd-7d10-8012-bb62-56e7b66c1acb) endpoint), and transforms the JSON returned by that endpoint into a Buildkite pipeline definition. Given the following `Jenkinsfile`, for example:
+The `.buildkite` folder contains a Node.js script that converts the `Jenkinsfile` in the root of the repository into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
 
 ```groovy
 pipeline {
@@ -33,10 +35,9 @@ pipeline {
 }
 ```
 
-The generated pipeline would be:
+The script will produce the following Buildkite pipeline JSON:
 
-``` V
-$ npm -C .buildkite --silent run build 
+```json
 {
     "steps": [
         {
@@ -49,21 +50,113 @@ $ npm -C .buildkite --silent run build
 }
 ```
 
-Commits to the `main` branch of this repo trigger:
+You can run this script locally by setting a few required environment variables (replacing `JENKINS_PASSWORD` with the one in your `docker-compose` logs):
 
-* A run of the Jenkins pipeline defined in the `Jenkinsfile`
-* A run of the program above, which converts the `Jenkinsfile` into a Buildkite pipeline (at runtime!) and then runs it on Buildkite:
+```bash
+export JENKINS_USERNAME="admin"
+export JENKINS_PASSWORD="0dcce1b76f944aaea37d114648ef75e6"
+export JENKINS_URL="http://localhost:8080/"
+```
 
-![A Jenkins pipeline run](https://github.com/user-attachments/assets/322e2723-bfdb-48c4-9d42-a49f333751cf)
+And then:
+
+```bash
+npm -C .buildkite install
+npm -C .buildkite --silent run jenkins-pipeline
+```
+
+### How does it work?
+
+This script converts a declarative `Jenkinsfile` into its JSON representation (which Jenkins uses internally), then extracts the build steps into a simplified structure. It works by calling Jenkins’s internal Pipeline Model Converter endpoint:
+
+```
+POST /pipeline-model-converter/toJson
+```
+
+This endpoint is normally used for [pipeline validation](https://www.jenkins.io/doc/book/pipeline/development/#linter), but it can be used just as easily for converting `Jenkinsfile`s into Buildkite pipelines. ✨
+
+You can also call the `pipeline-model-converter` endpoint directly with `curl` if you like:
+
+```bash
+curl -s -X POST \
+  -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
+  -F "jenkinsfile=<Jenkinsfile" \
+  "${JENKINS_URL}/pipeline-model-converter/toJson"
+```
+
+Which produces:
+
+```json
+{
+  "status": "ok",
+  "data": {
+    "result": "success",
+    "json": {
+      "pipeline": {
+        "stages": [
+          {
+            "name": ":jenkins: Hello from the Jenkinsfile!",
+            "branches": [
+              {
+                "name": "default",
+                "steps": [
+                  {
+                    "name": "echo",
+                    "arguments": [
+                      {
+                        "key": "message",
+                        "value": {
+                          "isLiteral": true,
+                          "value": "Hi, world! :wave:"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "agent": {
+          "type": "any"
+        }
+      }
+    }
+  }
+}
+```
+
+### Doing it live 🚀
+
+Thanks to the excellence of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), you can even generate Buildkite pipelines _at runtine_ using only a Jenkinsfile.
+
+In fact, commits to the `main` branch of this repository do exactly this, extending the Buildkite pipeline at runtime with the contents of the checked-in `Jenkinsfile`:
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
 
+The required environment variables -- username, password, Jenkins URL -- are set in the root pipeline (in the Steps field):
 
-This is just a proof of concept (and only works with declarative pipelines), but it's a neat demonstration of what you can do with dynamic pipelines. (Requires that an API token be created first, then set as a Buildkite cluter secret.)
+```yaml
+steps:
+  - label: ":pipeline: Generate pipeline"
+    commands:
+    
+      # Install Pulumi, etc.
+      # ...
 
-## Infrastructure 🚧
+      # Read the username and password from Pulumi config, and get the computed URL from the stack.
+      - export JENKINS_USERNAME="$$(pulumi -C infra config get adminUsername --stack dev)"
+      - export JENKINS_PASSWORD="$$(pulumi -C infra config get adminPassword --stack dev)"
+      - export JENKINS_URL="$$(pulumi -C infra stack output controllerCloudFrontURL --stack dev)"
+      
+      # Build and upload the pipeline using the supplied Jenkinsfile.
+      - npm -C .buildkite install
+      - npm -C .buildkite --silent run jenkins-pipeline | buildkite-agent pipeline upload
+```
 
-The `infra` folder contains a Pulumi program (still under construction) that deploys Jenkins on EC2 with a configurable number of agents (all as configurable virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are streamed to CloudWatcgh, so can be pulled with `pulumi logs`:
+## Infrastructure
+
+The `infra` folder contains a Pulumi program that deploys Jenkins on EC2 with a configurable number of agents (all as virtual machines) and an administrator password that's applied as a Pulumi secret. Logs for the controller are streamed to CloudWatcgh, so can be pulled with `pulumi logs`:
 
 ```bash
 pulumi logs -f
