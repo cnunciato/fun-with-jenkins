@@ -3,3 +3,4 @@ tmp
 jenkins.yaml
 .env.local
 node_modules
+pipeline-examples

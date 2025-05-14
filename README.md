@@ -91,6 +91,18 @@ To point the script at a different `Jenkinsfile`:
 npm -C .buildkite --silent run jenkins-pipeline ../MySiblingJenkinsfile
 ```
 
+To run it against a set of Jenkinsfiles -- for example, everything in the [jenkinsci/pipeline-examples](https://github.com/jenkinsci/pipeline-examples) repository:
+
+```bash
+#!/bin/bash
+
+git clone https://github.com/jenkinsci/pipeline-examples
+
+for file in ./pipeline-examples/declarative-examples/simple-examples/*.groovy; do
+    npm -C .buildkite --silent run jenkins-pipeline "../${file#./}"
+done
+```
+
 ### How does this work?
 
 The script uses Jenkins itself (specifically the [Declarative Pipeline plugin](https://plugins.jenkins.io/pipeline-model-definition/)) to convert a declarative `Jenkinsfile` into a JSON structure that Jenkins uses to model pipelines internally. It does this by calling Jenkins's internal `pipeline-model-converter` endpoint:
