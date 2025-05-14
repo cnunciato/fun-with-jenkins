@@ -82,6 +82,12 @@ npm -C .buildkite install
 npm -C .buildkite --silent run jenkins-pipeline
 ```
 
+To point the script at a different `Jenkinsfile`:
+
+```bash
+npm -C .buildkite --silent run ../SiblingJenkinsfile
+```
+
 ### How does this work?
 
 The script uses Jenkins itself (specifically the [Declarative Pipeline plugin](https://plugins.jenkins.io/pipeline-model-definition/)) to convert a declarative `Jenkinsfile` into a JSON structure that Jenkins uses to model pipelines internally. It does this by calling Jenkins's internal `pipeline-model-converter` endpoint:

@@ -1,12 +1,13 @@
 import { readFileSync } from "fs";
 import * as converter from "./converter.js";
 
-const username = process.env.JENKINS_USERNAME;
+const username = process.env.JENKINS_USERNAME || "admin";
 const password = process.env.JENKINS_PASSWORD;
-const jenkinsUrl = process.env.JENKINS_URL;
+const jenkinsUrl = process.env.JENKINS_URL || "http://localhost:8080/";
+const jenkinsFile = process.argv[2] || "../Jenkinsfile";
 
-if (!username || !password || !jenkinsUrl) {
-    console.error("Missing username, token, or Jenkins URL.")
+if (!password) {
+    console.error("Missing JENKINS_PASSWORD.")
     process.exit(1);
 }
 
@@ -30,17 +31,16 @@ async function convert(jenkinsfile) {
         throw new Error(`HTTP ${response.status}: ${text}`);
     }
 
-    return await response.json();
+    const json = await response.json();
+
+    if (json.data.result === "failure") {
+        json.data.errors.map(err => console.error(err.error.join("\n")));
+        process.exit(1);
+    }
+
+    return converter.jenkinsToBuildkite(json.data.json);
 }
   
-convert("../Jenkinsfile")
-    .then(json => {
-        if (json.data.result === "failure") {
-            json.data.errors.map(err => console.error(err.error.join("\n")));
-            process.exit(1);
-        }
-
-        const pipeline = converter.jenkinsToBuildkite(json.data.json);
-        console.log(JSON.stringify(pipeline, null, 4));
-    })
+convert(jenkinsFile)
+    .then(result => console.log(JSON.stringify(result, null, 4)))
     .catch(err => console.error("Conversion failed:", err.message));
