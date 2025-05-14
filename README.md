@@ -37,7 +37,7 @@ You can also use the `plugins.txt` file to specify any additional plugins like J
 
 This repo also demonstrates how to convert a Jenkins pipeline into a Buildkite pipeline programmatically.
 
-The Node.js script in the `.buildkite` folder (`jenkins-pipeline.js`) converts `Jenkinsfile`s into Buildkite pipeline definitions. By default, it looks for a `Jenkinsfile` in the root of the repository. Given the following `Jenkinsfile`, for example:
+The Node.js script in the `.buildkite` folder converts `Jenkinsfile`s into Buildkite pipeline definitions. By default, it looks for a `Jenkinsfile` in the root of the repository. Given the following `Jenkinsfile`, for example:
 
 ```groovy
 pipeline {
@@ -67,12 +67,15 @@ The script would produce the following Buildkite pipeline JSON:
 }
 ```
 
-Assuming you have Jenkins running locally (e.g., under `docker-compose` as described), you can run the script manually by setting a few environment variables, replacing `JENKINS_PASSWORD` with the one in your `docker-compose` logs:
+Assuming you have Jenkins running locally (e.g., with `docker-compose` as described), you can run the script manually by setting a few environment variables, replacing `JENKINS_PASSWORD` with the one in your `docker-compose` logs:
 
 ```bash
+# Optional (these are the defaults).
 export JENKINS_USERNAME="admin"
-export JENKINS_PASSWORD="6a62ece5bcf04bb89e937cae3ee1c830"
 export JENKINS_URL="http://localhost:8080/"
+
+# Required.
+export JENKINS_PASSWORD="6a62ece5bcf04bb89e937cae3ee1c830"
 ```
 
 And then running:
@@ -96,7 +99,7 @@ The script uses Jenkins itself (specifically the [Declarative Pipeline plugin](h
 POST /pipeline-model-converter/toJson
 ```
 
-This endpoint is typically used for [pipeline validation](https://www.jenkins.io/doc/book/pipeline/development/#linter), but it can be used just as easily for converting `Jenkinsfile`s into Buildkite pipelines. ✨
+This endpoint is usually used for [pipeline validation](https://www.jenkins.io/doc/book/pipeline/development/#linter), but it can be used just as easily for converting `Jenkinsfile`s into Buildkite pipelines. ✨
 
 You can call the `pipeline-model-converter` endpoint directly with `curl` if you like:
 
@@ -149,7 +152,7 @@ Which produces:
 }
 ```
 
-The script then transforms this structure into a Buildkite pipeline with `converter.js`, a module produced using the [Buildkite pipeline](https://github.com/buildkite/pipeline-schema/blob/main/schema.json) and [Jenkins declarative pipeline](https://github.com/jenkinsci/pipeline-model-definition-plugin/blob/master/EXTENDING.md) JSON schemas. The declarative pipeline schema is available in Jenkins at the `pipeline-model-schema` endpoint:
+The script then transforms this structure into a Buildkite pipeline with `converter.js`, a generated module produced using the [Buildkite pipeline](https://github.com/buildkite/pipeline-schema/blob/main/schema.json) and [Jenkins declarative pipeline](https://github.com/jenkinsci/pipeline-model-definition-plugin/blob/master/EXTENDING.md) JSON schemas. The declarative pipeline schema is available in Jenkins at the `pipeline-model-schema` endpoint:
 
 ```bash
 curl -s -X GET \
@@ -158,21 +161,21 @@ curl -s -X GET \
   "${JENKINS_URL}/pipeline-model-schema/json"
 ```
 
-Both JSON schemas are included for reference in the `.buildkite` folder, and more Jenkins pipeline examples are available (e.g., for testing) in the official [Jenkins pipeline examples](https://github.com/jenkinsci/pipeline-examples/tree/master) repository.
+Both JSON schemas are included for reference in the `.buildkite` folder. Additional pipeline examples are available (e.g., for testing) in the official [Jenkins pipeline examples](https://github.com/jenkinsci/pipeline-examples/tree/master) repository.
 
-### Doing it live 🚀
+### Doing it live with dynamic pipelines 🚀
 
 Thanks to the magic of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), we can combine all this goodness to generate a Buildkite pipeline at runtime using only a `Jenkinsfile`. 
 
-Commits to the `main` branch of this repo do exactly this, converting the steps defined in the `Jenkinsfile` into a set of Buildkite steps -- effectively allowing you to derive a Buildkite pipeline (or a portion of it) from a `Jenkinsfile`:
+Commits to the `main` branch of this repo do exactly this, converting the steps defined in the `Jenkinsfile` into a set of Buildkite steps, effectively allowing you to derive a Buildkite pipeline (or part of one) from a `Jenkinsfile`:
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/ba5d79b2-ed85-47bf-b56e-f99598f47312)
 
 ![The corrsponding run](https://github.com/user-attachments/assets/310aa889-f4fa-408a-b540-28dcc075cb48)
 
-Commits trigger side-by-side builds in both Buildkite and the Jenkins, both linked from the GitHub checks associated with each one.
+Each commit triggers two builds, one in Jenkins and one in Buildite. Both are linked from the the commit's associated GitHub checks.
 
-The environment variables used in the pipeline script (the username, password, and Jenkins server URL mentioned above) are set in the Buildkite root pipeline in the Steps field:
+The environment variables required by the conversion script (the username, password, and Jenkins URL mentioned above) are set in the Buildkite root pipeline in the Steps field:
 
 ```yaml
 steps:
@@ -188,15 +191,6 @@ steps:
       # Build and upload the pipeline using the supplied Jenkinsfile.
       - npm -C .buildkite install
       - npm -C .buildkite --silent run jenkins-pipeline | buildkite-agent pipeline upload
-```
-
-The pipeline model JSON schema is available as well at:
-
-```bash
-curl -s -X GET \
-  -u "${JENKINS_USERNAME}:${JENKINS_PASSWORD}" \
-  -F "jenkinsfile=<Jenkinsfile" \
-  "${JENKINS_URL}/pipeline-model-schema/json"
 ```
 
 ### Why is this interesting?
