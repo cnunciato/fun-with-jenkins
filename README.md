@@ -6,7 +6,7 @@ This is just me getting familiar with Jenkins.
 
 ## Running Jenkins locally with Docker Compose
 
-To spin up a quick Jenkins cluster locally with Docker Compose, first make sure Docker Desktop is running, then run:
+To spin up a lightweight Jenkins cluster locally with Docker, make sure Docker Desktop is running, then run:
 
 ```bash
 docker-compose up
@@ -14,11 +14,26 @@ docker-compose up
 
 ... and browse to the server at http://localhost:8080.
 
-At first launch, you'll be prompted for the initial administrator password. You'll find this password in the `docker-compose` logs, which should be visible in your terminal. Paste the password into the UI when prompted, choose Install Recommended Plugins, and you're done. 
+At first launch, you'll be prompted for the initial administrator password. You'll find this in the `docker-compose` logs, which should be visible in your terminal:
 
-Optionally, you can use the `plugins.txt` file to specify any additional plugins you'd like to install automatically, and .
+```
+jenkins-1  | *************************************************************
+jenkins-1  | 
+jenkins-1  | Jenkins initial setup is required. An admin user has been created and a password generated.
+jenkins-1  | Please use the following password to proceed to installation:
+jenkins-1  | 
+jenkins-1  | 6a62ece5bcf04bb89e937cae3ee1c830
+jenkins-1  | 
+jenkins-1  | This may also be found at: /var/jenkins_home/secrets/initialAdminPassword
+jenkins-1  | 
+jenkins-1  | *************************************************************
+```
 
-## Converting a Jenkinsfile to a Buildkite pipeline 🪁
+Paste the password into the UI when prompted, choose Install Recommended Plugins, and you're done. 
+
+You can also use the `plugins.txt` file to specify any additional plugins you'd Jenkins to install automatically at startup (using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/)).
+
+## Converting a Jenkinsfile to a Buildkite pipeline ➡️🪁
 
 The `.buildkite` folder contains a Node.js script that converts the `Jenkinsfile` in the root of the repository into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
 
@@ -128,20 +143,18 @@ Which produces:
 
 ### Doing it live 🚀
 
-Thanks to the excellence of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), you can even generate Buildkite pipelines _at runtine_ using only a Jenkinsfile.
+Thanks to the magic of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), you can even generate Buildkite pipelines at runtime, using only a Jenkinsfile, and run Jenkins and Buildkite side-by-side in response to a single commit.
 
-In fact, commits to the `main` branch of this repository do exactly this, extending the Buildkite pipeline at runtime with the contents of the checked-in `Jenkinsfile`:
+Commits to the `main` branch of this repository do exactly this, extending the Buildkite pipeline at runtime using the contents of the checked-in `Jenkinsfile`:
 
 ![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
 
-The required environment variables -- username, password, Jenkins URL -- are set in the root pipeline (in the Steps field):
+The environment variables required by the pipeline script (username, password, Jenkins server URL) are set in the Buildkite root pipeline (i.e., in the Steps field):
 
 ```yaml
 steps:
   - label: ":pipeline: Generate pipeline"
     commands:
-    
-      # Install Pulumi, etc.
       # ...
 
       # Read the username and password from Pulumi config, and get the computed URL from the stack.
@@ -154,10 +167,17 @@ steps:
       - npm -C .buildkite --silent run jenkins-pipeline | buildkite-agent pipeline upload
 ```
 
-## Infrastructure
+## Deploying Jenkins to EC2
 
-The `infra` folder contains a Pulumi program that deploys Jenkins on EC2 with a configurable number of agents (all as virtual machines) and an administrator password that's applied as a Pulumi secret. Logs for the controller are streamed to CloudWatcgh, so can be pulled with `pulumi logs`:
+The `infra` folder contains a Pulumi program that deploys a Jenkins cluster to EC2 with a configurable number of agents (all as virtual machines) and an administrator password applied as a Pulumi secret. Logs for the controller are sent to CloudWatch, so can be streamed to the terminal pulled with `pulumi logs`:
 
 ```bash
 pulumi logs -f
+```
+
+```
+Collecting logs for stack dev since 2025-05-14T06:15:32.000-07:00.
+ 2025-05-14T07:13:28.000-07:00[      system-log-group-dae9f00] May 14 14:13:28 ip-10-0-1-52 systemd: Created slice User Slice of jenkins.
+ 2025-05-14T07:13:28.000-07:00[      system-log-group-dae9f00] May 14 14:13:28 ip-10-0-1-52 systemd: Started Session c268 of user jenkins.
+ 2025-05-14T07:13:28.000-07:00[      system-log-group-dae9f00] May 14 14:13:28 ip-10-0-1-52 log4j-cve-2021-44228-hotpatch: [log4j-hotpatch] Using Java 17 hotpatch
 ```
