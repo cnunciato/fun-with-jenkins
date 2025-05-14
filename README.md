@@ -69,7 +69,7 @@ You can run this script locally by setting a few required environment variables 
 
 ```bash
 export JENKINS_USERNAME="admin"
-export JENKINS_PASSWORD="0dcce1b76f944aaea37d114648ef75e6"
+export JENKINS_PASSWORD="6a62ece5bcf04bb89e937cae3ee1c830"
 export JENKINS_URL="http://localhost:8080/"
 ```
 
