@@ -1,4 +1,5 @@
 import { readFileSync } from "fs";
+import * as converter from "./converter.js";
 
 const username = process.env.JENKINS_USERNAME;
 const password = process.env.JENKINS_PASSWORD;
@@ -31,46 +32,15 @@ async function convert(jenkinsfile) {
 
     return await response.json();
 }
-
-function transform(jenkinsJson) {
-    const stages = jenkinsJson?.pipeline?.stages || [];
-    const steps = [];
-  
-    for (const stage of stages) {
-        const stageName = stage.name;
-
-        for (const branch of stage.branches || []) {
-            for (const step of branch.steps || []) {
-                const stepName = step.name;
-        
-                let command = stepName;
-        
-                if (step.arguments && step.arguments.length > 0) {
-                    const args = step.arguments.map(arg => {
-                        if (arg.key === "message" && arg.value?.isLiteral) {
-                            return `'${arg.value.value}'`;
-                        } else {
-                            return arg.value?.value || "";
-                        }
-                    });
-        
-                    command += " " + args.join(" ");
-                }
-        
-                steps.push({
-                    label: stageName,
-                    commands: [command]
-                });
-            }
-        }
-    }
-  
-    return { steps };
-  }
   
 convert("../Jenkinsfile")
     .then(json => {
-        const transformed = transform(json.data.json);
-        console.log(JSON.stringify(transformed, null, 4));
+        if (json.data.result === "failure") {
+            json.data.errors.map(err => console.error(err.error.join("\n")));
+            process.exit(1);
+        }
+
+        const pipeline = converter.jenkinsToBuildkite(json.data.json);
+        console.log(JSON.stringify(pipeline, null, 4));
     })
     .catch(err => console.error("Conversion failed:", err.message));
