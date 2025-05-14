@@ -29,11 +29,11 @@ jenkins-1  |
 jenkins-1  | *************************************************************
 ```
 
-Paste the password into the UI when prompted, choose Install Recommended Plugins, and you're done. 
+Paste the password into the UI when prompted, choose Install Suggested Plugins, and you're done. 🎉
 
-You can also use the `plugins.txt` file to specify any additional plugins you'd Jenkins to install automatically at startup (using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/)).
+You can also use the `plugins.txt` file to specify any additional plugins you'd Jenkins to install automatically at startup using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/).
 
-## Converting a Jenkinsfile to a Buildkite pipeline ➡️🪁
+## Converting a Jenkinsfile into a Buildkite pipeline 🪁
 
 The `.buildkite` folder contains a Node.js script that converts the `Jenkinsfile` in the root of the repository into a Buildkite pipeline definition. For example, given the following `Jenkinsfile`:
 
