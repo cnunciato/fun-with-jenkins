@@ -29,7 +29,7 @@ jenkins-1  |
 jenkins-1  | *************************************************************
 ```
 
-Paste the password into the UI when prompted, choose Install Suggested Plugins, and you're done. 🎉
+Paste the password into the UI, choose Install Suggested Plugins, and you're done. 🎉
 
 You can also use the `plugins.txt` file to specify any additional plugins you'd Jenkins to install automatically at startup using Jenkins [configuration-as-code](https://plugins.jenkins.io/configuration-as-code/).
 
@@ -50,7 +50,7 @@ pipeline {
 }
 ```
 
-The script will produce the following Buildkite pipeline JSON:
+The script produces the following Buildkite pipeline JSON:
 
 ```json
 {
@@ -82,7 +82,7 @@ npm -C .buildkite --silent run jenkins-pipeline
 
 ### How does it work?
 
-This script converts a declarative `Jenkinsfile` into its JSON representation (which Jenkins uses internally), then extracts the build steps into a simplified structure. It works by calling Jenkins’s internal Pipeline Model Converter endpoint:
+The script converts a declarative `Jenkinsfile` into an internal JSON representation, then extracts the build steps into a simplified structure. It works by calling Jenkins’s internal Pipeline Model Converter endpoint:
 
 ```
 POST /pipeline-model-converter/toJson
@@ -141,15 +141,19 @@ Which produces:
 }
 ```
 
+The script 
+
 ### Doing it live 🚀
 
-Thanks to the magic of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), you can even generate Buildkite pipelines at runtime, using only a Jenkinsfile, and run Jenkins and Buildkite side-by-side in response to a single commit.
+Thanks to the magic of [dynamic pipelines](https://buildkite.com/docs/pipelines/configure/dynamic-pipelines), it's also possible to generate a Buildkite pipeline at runtime using only a Jenkinsfile. 
 
-Commits to the `main` branch of this repository do exactly this, extending the Buildkite pipeline at runtime using the contents of the checked-in `Jenkinsfile`:
+Commits to the `main` branch of this repo do exactly this, converting the steps defined in the `Jenkinsfile` into a set of Buildkite steps -- effectively allowing you to "drive" a Buildkite pipeline with a `Jenkinsfile`:
 
-![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/758e44c0-e506-44d7-9afb-224efcfa5745)
+![A Buildkite pipeline generated from a Jenkinsfile](https://github.com/user-attachments/assets/ba5d79b2-ed85-47bf-b56e-f99598f47312)
 
-The environment variables required by the pipeline script (username, password, Jenkins server URL) are set in the Buildkite root pipeline (i.e., in the Steps field):
+![A Jenkins pipeline run](https://github.com/user-attachments/assets/310aa889-f4fa-408a-b540-28dcc075cb48)
+
+The environment variables used in the pipeline script (username, password, Jenkins server URL) are set in the Buildkite root pipeline in the Steps field:
 
 ```yaml
 steps:
@@ -166,6 +170,10 @@ steps:
       - npm -C .buildkite install
       - npm -C .buildkite --silent run jenkins-pipeline | buildkite-agent pipeline upload
 ```
+
+### Why is this interesting?
+
+As a proof-of-concept, the script currently handles only a subset of what's possible with a declarative `Jenkinsfile`. But the approach is a powerful one that can make migrating large numbers of complex Jenkins pipelines much easier by relying on  Jenkins's own internal data structures (rather than on the raw content of Jenkinsfiles) and encapsulating conversion logic for reuse across all of the pipelines in an organization.
 
 ## Deploying Jenkins to EC2
 

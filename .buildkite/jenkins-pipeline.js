@@ -68,7 +68,6 @@ function transform(jenkinsJson) {
     return { steps };
   }
   
-
 convert("../Jenkinsfile")
     .then(json => {
         const transformed = transform(json.data.json);
