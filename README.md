@@ -52,7 +52,15 @@ pipeline {
 }
 ```
 
-The script would produce the following Buildkite pipeline JSON:
+The script would produce the following Buildkite pipeline YAML:
+
+```yaml
+steps:
+  - command: echo "Hello, world! :wave:"
+    label: ':jenkins: Hi there from the Jenkinsfile!:'
+```
+
+Or alternatively, JSON:
 
 ```json
 {
@@ -73,6 +81,7 @@ Assuming you have Jenkins running locally (e.g., with `docker-compose` as descri
 # Optional (these are the defaults).
 export JENKINS_USERNAME="admin"
 export JENKINS_URL="http://localhost:8080/"
+export OUTPUT_FORMAT="yaml" # or "json"
 
 # Required.
 export JENKINS_PASSWORD="6a62ece5bcf04bb89e937cae3ee1c830"
