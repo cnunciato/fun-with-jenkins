@@ -5,9 +5,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-      "jenkins-pipeline": "node ./jenkins-pipeline.js"
+    "jenkins-pipeline": "node ./jenkins-pipeline.js"
   },
   "dependencies": {
-      "@buildkite/buildkite-sdk": "^0.2.3"
+    "@buildkite/buildkite-sdk": "^0.2.3",
+    "js-yaml": "^4.1.0"
   }
 }

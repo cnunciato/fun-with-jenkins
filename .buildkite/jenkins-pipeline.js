@@ -1,9 +1,11 @@
 import { readFileSync } from "fs";
 import * as converter from "./converter.js";
+import * as yaml from "js-yaml";
 
 const username = process.env.JENKINS_USERNAME || "admin";
 const password = process.env.JENKINS_PASSWORD;
 const jenkinsUrl = process.env.JENKINS_URL || "http://localhost:8080/";
+const outputFormat = process.env.OUTPUT_FORMAT || "yaml";
 const jenkinsFile = process.argv[2] || "../Jenkinsfile";
 
 if (!password) {
@@ -53,6 +55,10 @@ convert(jenkinsFile)
         // So I'll just quietly remove that.
         delete result.agents;
         
-        console.log(JSON.stringify(result, null, 4))
+        if (outputFormat === "json") {
+            console.log(JSON.stringify(result, null, 4))
+        } else {
+            console.log(yaml.dump(result));
+        }
     })
     .catch(err => console.error("Conversion failed:", err.message));
